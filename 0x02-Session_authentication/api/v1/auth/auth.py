@@ -2,6 +2,7 @@
 """
 Module for authentication
 """
+import os
 from typing import List, TypeVar
 
 from flask import request
@@ -40,8 +41,7 @@ class Auth():
         # Remove the trailing slash from the path
         path = path.rstrip("/")
         # Check if path is in excluded_paths and return False if path is
-        # in excluded_paths
-        # Loop through excluded paths
+        # in excluded_paths Loop through excluded paths
         for excluded_path in excluded_paths:
             # Check if given path starts with excluded path, with * at the end
             if excluded_path.endswith("*") and \
@@ -72,8 +72,26 @@ class Auth():
 
     def current_user(self, request=None) -> TypeVar('User'):
         """This function takes a request object as an optional argument
-        (defaults to None) and returns a value of type 'User'. The purpose
-        and how the request object is used will be determined later.
+        (defaults to None) and returns a value of type 'User'. The
+        purpose and how the request object is used will be determined later.
         For now, it simply returns None.
         """
         return None
+
+    def session_cookie(self, request=None) -> str:
+        """Retrieves the session cookie from a request.
+
+        Args:
+            request (flask.request, optional): Request to retrieve the session
+            cookie from. Defaults to None.
+
+        Returns:
+            str: The value of the session cookie, None if the request or the
+            cookie is invalid.
+        """
+        # If request is not None
+        if request is not None:
+            # Get the name of the session cookie from SESSION_NAME env variable
+            cookie_name = os.getenv('SESSION_NAME')
+            # Return the value of the session cookie
+            return request.cookies.get(cookie_name)
