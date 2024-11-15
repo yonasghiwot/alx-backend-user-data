@@ -13,6 +13,9 @@ from flask_cors import CORS, cross_origin
 
 from api.v1.auth.auth import Auth
 from api.v1.auth.basic_auth import BasicAuth
+from api.v1.auth.session_auth import SessionAuth
+from api.v1.auth.session_db_auth import SessionDBAuth
+from api.v1.auth.session_exp_auth import SessionExpAuth
 from api.v1.views import app_views
 
 app = Flask(__name__)
@@ -22,14 +25,19 @@ CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 auth = None
 
 
-# Update api/v1/app.py for using BasicAuth class instead of Auth depending
-# on the value of the environment variable AUTH_TYPE, If AUTH_TYPE is equal
-# to basic_auth:
-#   import BasicAuth from api.v1.auth.basic_auth
-#   create an instance of BasicAuth and assign it to the variable auth
-# Otherwise, keep the previous mechanism with auth an instance of Auth.
+# Update api/v1/app.py for using SessionAuth instance for the variable
+# auth depending of the value of the environment variable AUTH_TYPE, If
+# AUTH_TYPE is equal to session_auth:
+#   import SessionAuth from api.v1.auth.session_auth
+#   create an instance of SessionAuth and assign it to the variable auth
 auth_type = getenv('AUTH_TYPE', 'default')
-if auth_type == "basic_auth":
+if auth_type == "session_auth":
+    auth = SessionAuth()
+elif auth_type == 'session_exp_auth':
+    auth = SessionExpAuth()
+elif auth_type == 'session_db_auth':
+    auth = SessionDBAuth()
+elif auth_type == "basic_auth":
     auth = BasicAuth()
 else:
     auth = Auth()
@@ -81,21 +89,25 @@ def handle_request():
     # Create list of excluded paths
     excluded_paths = ['/api/v1/status/',
                       '/api/v1/unauthorized/',
-                      '/api/v1/forbidden/']
+                      '/api/v1/forbidden/',
+                      '/api/v1/auth_session/login/']
     # if request.path is not part of the list above, do nothing
     # You must use the method require_auth from the auth instance
     if not auth.require_auth(request.path, excluded_paths):
         return
-    # If auth.authorization_header(request) returns None, raise the error
-    # 401 - you must use abort
+    # If auth.authorization_header(request) and auth.session_cookie(request)
+    # return None, raise the error, 401 - you must use abort
     auth_header = auth.authorization_header(request)
-    if auth_header is None:
+    session_cookie = auth.session_cookie(request)
+    if auth_header is None and session_cookie is None:
         abort(401)
     # If auth.current_user(request) returns None, raise the error 403 - you
     # must use abort
     user = auth.current_user(request)
     if user is None:
         abort(403)
+    # Assign the result of auth.current_user(request) to request.current_user
+    request.current_user = user
 
 
 if __name__ == "__main__":
