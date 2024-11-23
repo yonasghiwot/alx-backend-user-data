@@ -19,14 +19,13 @@ from api.v1.views import app_views
 app = Flask(__name__)
 app.register_blueprint(app_views)
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
+
 # Create a variable auth initialized to None after the CORS definition
+
 auth = None
 
 # Update the @app.before_request method in api/v1/app.py:
 
-#  Add the URL path /api/v1/auth_session/login/ in the list of excluded paths of the method require_auth -
-#  this route doesn’t exist yet but it should be accessible outside authentication
-#  If auth.authorization_header(request) and auth.session_cookie(request) return None, abort(401)
 
 auth_type = getenv('AUTH_TYPE', 'default')
 if auth_type == "session_auth":
